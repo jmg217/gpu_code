@@ -12,6 +12,7 @@
 #include "Payoff.h"
 
 #define PI 3.14159265358979323846
+void one_dim_array(std::vector< double > &vals, double array[], int N);
 
 //This function is contained within meshestimator.cpp
 double MeshEstimator(double strike, double r, double delta_t, int b, double m,  std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount, const PayOff& thePayOff);
@@ -108,16 +109,18 @@ setting.close();
 double double_num;
 int integer; 
 
-std::vector < double > X0;
-std::vector < double > delta;
-std::vector <double> sigma;
-std::vector <double> asset_amount;
+std::vector < double > X0V;
+std::vector < double > deltaV;
+std::vector <double> sigmaV;
+std::vector <double> asset_amountV;
+
+
 
 std::istringstream ss(settings[0]);
 std::string token;
 while(std::getline(ss, token, ',')) 
     {
-          X0.push_back(atof(token.c_str()));
+          X0V.push_back(atof(token.c_str()));
     }
 
 double T = atof(settings[1].c_str());
@@ -130,13 +133,13 @@ double r= atof(settings[3].c_str());
 std::istringstream ss2(settings[4]);
 while(std::getline(ss2, token, ','))
     {
-        delta.push_back(atof(token.c_str()));
+        deltaV.push_back(atof(token.c_str()));
     }
 
 std::istringstream ss3(settings[5]);
 while(std::getline(ss3, token, ','))
     {
-        sigma.push_back(atof(token.c_str()));
+        sigmaV.push_back(atof(token.c_str()));
     }
 
 double Path_estimator_iterations=atof(settings[6].c_str());
@@ -149,33 +152,33 @@ int num_assets=atof(settings[11].c_str());
 std::istringstream ss4(settings[12]);
 while(std::getline(ss4, token, ','))
     {
-        asset_amount.push_back(atof(token.c_str()));
+        asset_amountV.push_back(atof(token.c_str()));
     }
 
-if(X0.size() != num_assets || sigma.size() != num_assets || delta.size() !=num_assets || asset_amount.size() !=num_assets){
+if(X0V.size() != num_assets || sigmaV.size() != num_assets || deltaV.size() !=num_assets || asset_amountV.size() !=num_assets){
           std::cout<<"Either the starting price, volatility, number of assets or dividend yield was not specified for all assets"<<std::endl;
            exit (EXIT_FAILURE);
        }
 
 std::cout<<"The parameters of this simulation are:"<<std::endl;
        //Print these values to screen 
-for(integer=0; integer<X0.size(); integer++){
-std::cout<<"Starting Price="<<X0[integer]<<std::endl;
+for(integer=0; integer<X0V.size(); integer++){
+std::cout<<"Starting Price="<<X0V[integer]<<std::endl;
 }
 
 std::cout<<"Time to expiry="<<T<<"\n"<<"Number of time steps="<<m<<"\n"<<"interest rate="<<r<<std::endl;
 
-for(integer=0; integer<sigma.size(); integer++){
-    std::cout<<"volatility="<<sigma[integer]<<std::endl;
+for(integer=0; integer<sigmaV.size(); integer++){
+    std::cout<<"volatility="<<sigmaV[integer]<<std::endl;
 }
 
-for(integer=0; integer<delta.size(); integer++){
-    std::cout<<"dividend yield="<<delta[integer]<<std::endl;
+for(integer=0; integer<deltaV.size(); integer++){
+    std::cout<<"dividend yield="<<deltaV[integer]<<std::endl;
 }
 std::cout<<"number of iterations over path estimator="<<Path_estimator_iterations<<"\n"<<"strike  price="<<strike<<"\n"<<"number of nodes per time step="<<b<<"\n"<<"number mesh generations="<<N<<"\n"<<"Number of Assets="<<num_assets<<std::endl; 
 
-for(integer=0; integer<asset_amount.size(); integer++){
-    std::cout<<"asset amount="<<asset_amount[integer]<<std::endl;
+for(integer=0; integer<asset_amountV.size(); integer++){
+    std::cout<<"asset amount="<<asset_amountV[integer]<<std::endl;
 }
 
 //////////////////////////////////////////
@@ -185,7 +188,21 @@ for(integer=0; integer<asset_amount.size(); integer++){
 GeometricPayOffPut payoff(strike);
  
 
+// CONVERT TO ARRAYS
 
+double X0 [num_assets];
+double delta [num_assets];
+double sigma [num_assets];
+double asset_amount [num_assets];
+
+one_dim_array(X0V, X0, num_assets);
+one_dim_array(deltaV, delta, num_assets);
+one_dim_array(sigmaV, sigma, num_assets);
+one_dim_array(asset_amountV, asset_amount, num_assets);
+
+
+// VECTOR CODE
+/*
 //Mesh matrix
 std::vector< std::vector< std::vector<double> > > X;
 //WEIGHTS 3-dimensional matrix for step 1 and beyond
@@ -200,16 +217,31 @@ std::vector< std::vector<double> > dim2temp;
 std:: vector<double> dim1temp;
 //mesh estimator high bias 2-d matrix
 std::vector< std::vector<double> > V;
+*/
 //V values from each iteration over meshes
 std::vector< double > Vvector;
 //v values from each iteration over meshes
 std::vector< double > vvector;
 //asset vector
 std::vector< double > assets;
-
+//1 d vector in Weightsgen for-loop
+std:: vector<double> dim1temp;
 
 std::vector<double> sortvector;
 //std::cout<<"Before loop"<<std::endl;
+
+
+// ARRAY CODE
+
+double* X;
+X= new double[m*b*num_assets];
+
+double* W;
+W= new double[m*b*b];
+
+double* V;
+V = new double[m*b];
+
 for(int init=0; init<num_assets; init++){
 	X0[init]=log(X0[init]);
 }	
@@ -217,14 +249,14 @@ for(int init=0; init<num_assets; init++){
 
 //for-loop over different meshes
 for(int iterator=0; iterator<N; iterator++){
-X.clear();
-W.clear();
-V.clear();
+//X.clear();
+//W.clear();
+//V.clear();
 //for-loop to generate the mesh
 for(int i=0; i<m; i++){
 
 
-	myvector.clear();
+	//myvector.clear();
 
 	if(i==0){
 
@@ -232,17 +264,18 @@ for(int i=0; i<m; i++){
 
 	for(int l=0; l<b; l++){
 
-		nodevector.clear();
+		//nodevector.clear();
 
 		for(int ll=0; ll<num_assets; ll++){
 			//Z=boxmuller();//standard normally distributed variable 
 			Z=distribution(generator);
 		//std::cout<<"meshgen="<<Z<<std::endl;
 			//Xi=X0[ll] * (exp ((r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z));//node value at the second time step
-			Xi=X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
-			nodevector.push_back(Xi);
+			//Xi=X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
+			//nodevector.push_back(Xi);
+			X[m*b*(ll)+m*(l)+(i)]=X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
 		}
-		myvector.push_back(nodevector);	//store the value in a temp vector
+	//	myvector.push_back(nodevector);	//store the value in a temp vector
 		
 	}
 	}
@@ -251,7 +284,7 @@ for(int i=0; i<m; i++){
 	
 	for(int j=0; j<b; j++){
 	
-		nodevector.clear();
+	//	nodevector.clear();
 	//	Rn=UniRandom(b);
 //std::cout<<Rn<<std::endl;
 		for(int jj=0; jj<num_assets; jj++){
@@ -259,16 +292,17 @@ for(int i=0; i<m; i++){
 			//Z=boxmuller();
 			Z=distribution(generator); 
 			//std::cout<<"meshgen="<<Z<<std::endl;
-			Xi=X[i-1][j][jj];
+			//Xi=X[i-1][j][jj];
+			Xi=X[m*b*(jj)+m*(j)+(i-1)];
 			//Xj=Xi * (exp ((r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z));
-			Xj=Xi +  (r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z; 
-			nodevector.push_back(Xj);
+			X[m*b*(jj)+m*(j)+(i)]=Xi +  (r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z; 
+			//nodevector.push_back(Xj);
 		}	
-		myvector.push_back(nodevector);
+	//	myvector.push_back(nodevector);
 	}
 	}
 
-X.push_back(myvector);
+//X.push_back(myvector);
 
 }
 
@@ -279,14 +313,17 @@ X.push_back(myvector);
 //NOTE: W^i_(j,k) IS REPRESENTED AT W[i][k][j] where k is at step i+1 and j is at step i.
 for(int I=0; I<m; I++){
 //std::cout<<I<<std::endl;
-dim2temp.clear();//temporary vector
+//dim2temp.clear();//temporary vector
 	
 	if(I==0){
 		for(int k=0; k<b; k++){
-        	dim1temp.clear();
-			w=1;// all weights from the starting node are equal to 1
-		dim1temp.push_back(w);
-		dim2temp.push_back(dim1temp);
+        	//dim1temp.clear();
+			for(int j=0; j<b; j++){
+				if(j==0){W[m*b*(j)+m*(k)+(I)]=1;}// all weights from the starting node are equal to 1
+				else{W[m*b*(j)+m*(k)+(I)]=0;}
+			}
+		//dim1temp.push_back(w);
+		//dim2temp.push_back(dim1temp);
 	//std::cout<<"w1="<<w<<std::endl;
 		}
 	}
@@ -310,7 +347,8 @@ dim2temp.clear();//temporary vector
 //std::cout<<jj<<"\t"<<num_assets<<"\t"<<X[I-1][j][jj]<<"\t"<<X[I][k][jj]<<"\t"<<sigma[jj]<<"\t"<<delta[jj]<<"\t"<<r<<"\t"<<delta_t<<std::endl;
 					
 					//w = w + log(density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t));//step 1 in X is X[0] step 1 in W is W[1]	
-					w = w * density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t);
+					//w = w * density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t);
+					w = w * density(X[m*b*(jj)+m*(j)+(I-1)], X[m*b*(jj)+m*(k)+(I)], sigma[jj], r, delta[jj], delta_t);
 				//std::cout<<jj<<"\t"<<w<<"\t"<<density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t)<<std::endl;
 					}
 			//w = exp(w);
@@ -333,7 +371,7 @@ dim2temp.clear();//temporary vector
 			//devide each element by the denominator
 			for(int t=0; t<b; t++){
 		//	std::cout<<dim1temp[t]<<"\t"<<wdenominator<<std::endl; 
-			dim1temp[t]=(((double)b)*(dim1temp[t]))/wdenominator;
+			W[m*b*(t)+m*(k)+(I)]=(((double)b)*(dim1temp[t]))/wdenominator;
 		/*	dim1temp[t]=dim1temp[t]-wdenominator;		
 			dim1temp[t]=((double)b)*exp(dim1temp[t]);*/
 		//	std::cout<<dim1temp[t]<<std::endl;
@@ -343,12 +381,12 @@ dim2temp.clear();//temporary vector
 			Sumcheck+=dim1temp[sumcheck];
 			}	
 			std::cout<<Sumcheck<<std::endl;*/
-		dim2temp.push_back(dim1temp); //dim1 is full therefore we add it onto dim2 vector
+		//dim2temp.push_back(dim1temp); //dim1 is full therefore we add it onto dim2 vector
 		}	
 	
 	}
 
-W.push_back(dim2temp); //mesh weights matrix
+//W.push_back(dim2temp); //mesh weights matrix
 }
 /*
 std::cout<<"W[0][0][0]="<<W[0][0][0]<<std::endl;                                                                                                                                 
@@ -362,7 +400,7 @@ std::cout<<"W[1][1][1]="<<W[1][1][1]<<std::endl;
 double check=0;
 //check all the weights from X0 are 1
 for(int e=0; e<b; e++){
-if(W[0][e][0]!=1){
+if(W[m*b*(0)+m*(e)+(0)]!=1){
 std::cout<<"there is an error with the weights. check that W[0][k][0]'s =1"<<std::endl;
 }
 }
@@ -371,7 +409,7 @@ for(int q=1; q<m; q++){
 	for(int a=0; a<b; a++){
 		check=0;
 		for(int E=0; E<b; E++){
-			check+=W[q][a][E];
+			check+=W[m*b*(E)+m*(a)+(q)];
 
 		}
 	}
@@ -427,7 +465,9 @@ outFile << N <<"\t"<< b <<"\t"<< Path_estimator_iterations<<"\t"<< V_0 <<"\t"<< 
 
 outFile.close();
 
-
+delete[] X;
+delete[] W;
+delete[] V;
 
 return 0;
 

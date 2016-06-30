@@ -12,17 +12,17 @@
 
 ////////Remeber to use delete when using new
 
-double* one_dim_array(std::vector< double > &vals, int N)
+void one_dim_array(std::vector< double > &vals, double array[], int N)
 {
-double* temp;
-temp =new double[N];
+//double* temp;
+//temp =new double[N];
 
 for(int i=0; i<N; i++){
-temp[i]=vals[i];
+array[i]=vals[i];
 
 }
 
-return temp;
+//return temp;
 
 }
 
