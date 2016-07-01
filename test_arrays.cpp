@@ -1,12 +1,20 @@
 #include <iostream>
 
+enum Containers {matrix, vector};
 
-int function(int pointer){
+
+int* function(int* pt, int i, Containers container){
 /*int c=0;
 for(int i=0; i<5; i++){
-c+=pointer[i];
+c+=ARRAY[i];
 }*/
-return pointer;
+if(container == vector){
+std::cout<<"it worked"<<std::endl;
+}
+int* p;
+p=&pt[i];
+return p;
+//return c;
 }
 
 int main(){
@@ -56,18 +64,30 @@ std::cout<<"y"<<std::endl;
    }
 */
 
-int* pointer;
-pointer= new int[5];
 
+
+int* pointer;
+int* p;
+//pointer= new int[5];
+
+int ARRAY[5];
+p=ARRAY;
 for(int it=0; it<5; it++){
-pointer[it]=it;
+p[it]=it;
 }
 
-int c= function(pointer[1]);
+Containers vec;
+vec = vector;
+*function(p, 4, vec )=100;
 
-std::cout<<c<<std::endl;
+int test;
 
-delete[] pointer;
+test=(*function(p, 3, vec)) * (*function(p, 4, vec));
+//int c= function(ARRAY);
+
+std::cout<<sizeof(ARRAY)/sizeof(*ARRAY)<<std::endl;
+
+//delete[] pointer;
 
 return 0;
 }

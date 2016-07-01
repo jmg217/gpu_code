@@ -11,16 +11,27 @@
 #include <random>
 #include "Payoff.h"
 
+
+
 #define PI 3.14159265358979323846
 void one_dim_array(std::vector< double > &vals, double array[], int N);
 
+double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
+
+/*
 //This function is contained within meshestimator.cpp
 double MeshEstimator(double strike, double r, double delta_t, int b, double m,  std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount, const PayOff& thePayOff);
+*/
+double MeshEstimator(double strike, double r, double delta_t, int b, double m,  double* X, double* W, double* V, double asset_amount[], const PayOff& thePayOff, int num_assets);
 
+/*
 //This function is contained within patestimator.cpp.
 double PathEstimator(double strike, double r, double delta_t, int b, double m, std::vector<double>& sigma, std::vector<double>& delta, std::vector<double>& X0, std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount, const PayOff& thePayOff);
+*/
 
-void print_high_payoff(int b, double m, std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount, std::vector< std::vector< std::vector<double> > >& W );
+double PathEstimator(double strike, double r, double delta_t, int b, double m, double sigma[], double delta[], double X0[], double* X, double* W, double* V, double asset_amount[], const PayOff& thePayOff, int num_assets);
+
+void print_high_payoff(int b, double m, double* X, double* V, double asset_amount[], double* W );
 
 double round( double value )//This function rounds the double sent to it to the nearest integer.
 {
@@ -39,7 +50,7 @@ double sum=0, c=0, y, t;
 
 return sum;
 }
-
+/*
 double boxmuller()//This function uses the Box Muller algorithm to return standard normally distributed varibles.
 {
 double U1, U2, R, Y, Z1, Z2;
@@ -63,7 +74,7 @@ double U1, U2, R, Y, Z1, Z2;
 	}
 return Z1;
 }
-
+*/
 int UniRandom(int b) //This function returns uniformally distributed variables in the interval (0,b-1)
 {
 double rn;
@@ -232,15 +243,19 @@ std::vector<double> sortvector;
 
 
 // ARRAY CODE
+int m_int= (int)m;
 
 double* X;
-X= new double[m*b*num_assets];
+int X_dim = (m_int) * b * (num_assets);
+X= new double[X_dim];
 
 double* W;
-W= new double[m*b*b];
+int W_dim = (m_int) * b * b;
+W= new double[W_dim];
 
 double* V;
-V = new double[m*b];
+int V_dim = (m_int) * b;
+V = new double[V_dim];
 
 for(int init=0; init<num_assets; init++){
 	X0[init]=log(X0[init]);
@@ -271,9 +286,14 @@ for(int i=0; i<m; i++){
 			Z=distribution(generator);
 		//std::cout<<"meshgen="<<Z<<std::endl;
 			//Xi=X0[ll] * (exp ((r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z));//node value at the second time step
-			//Xi=X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
+		//	Xi=X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
 			//nodevector.push_back(Xi);
-			X[m*b*(ll)+m*(l)+(i)]=X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
+ 
+	*three_dim_index(X, i, l, ll, m, b) = X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
+		
+	//X[m*b*(ll)+m*(l)+(i)]=X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
+		//three_dim_index(X, i, l, ll, m, b, Xi);
+
 		}
 	//	myvector.push_back(nodevector);	//store the value in a temp vector
 		
@@ -293,9 +313,11 @@ for(int i=0; i<m; i++){
 			Z=distribution(generator); 
 			//std::cout<<"meshgen="<<Z<<std::endl;
 			//Xi=X[i-1][j][jj];
-			Xi=X[m*b*(jj)+m*(j)+(i-1)];
+			//Xi=X[m*b*(jj)+m*(j)+(i-1)];
+			Xi=*three_dim_index(X, (i-1), j, jj, m, b);
 			//Xj=Xi * (exp ((r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z));
-			X[m*b*(jj)+m*(j)+(i)]=Xi +  (r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z; 
+			//X[m*b*(jj)+m*(j)+(i)]=Xi +  (r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z; 
+			*three_dim_index(X, i, j, jj, m, b)=Xi +  (r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z;
 			//nodevector.push_back(Xj);
 		}	
 	//	myvector.push_back(nodevector);
@@ -319,9 +341,19 @@ for(int I=0; I<m; I++){
 		for(int k=0; k<b; k++){
         	//dim1temp.clear();
 			for(int j=0; j<b; j++){
-				if(j==0){W[m*b*(j)+m*(k)+(I)]=1;}// all weights from the starting node are equal to 1
-				else{W[m*b*(j)+m*(k)+(I)]=0;}
+
+				if(j==0){
+					//W[m*b*(j)+m*(k)+(I)]=1;
+					*three_dim_index(W, I, k, j, m, b)=1;
+				}// all weights from the starting node are equal to 1
+
+				else{
+					//W[m*b*(j)+m*(k)+(I)]=0;
+					*three_dim_index(W, I, k, j, m, b)=0;
+				}
 			}
+
+
 		//dim1temp.push_back(w);
 		//dim2temp.push_back(dim1temp);
 	//std::cout<<"w1="<<w<<std::endl;
@@ -348,8 +380,9 @@ for(int I=0; I<m; I++){
 					
 					//w = w + log(density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t));//step 1 in X is X[0] step 1 in W is W[1]	
 					//w = w * density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t);
-					w = w * density(X[m*b*(jj)+m*(j)+(I-1)], X[m*b*(jj)+m*(k)+(I)], sigma[jj], r, delta[jj], delta_t);
-				//std::cout<<jj<<"\t"<<w<<"\t"<<density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t)<<std::endl;
+					//w = w * density(X[m*b*(jj)+m*(j)+(I-1)], X[m*b*(jj)+m*(k)+(I)], sigma[jj], r, delta[jj], delta_t);
+					w = w * density(*three_dim_index(X, (I-1), j, jj, m, b), *three_dim_index(X, I, k, jj, m, b), sigma[jj], r, delta[jj], delta_t);
+					//std::cout<<jj<<"\t"<<w<<"\t"<<density(X[I-1][j][jj], X[I][k][jj], sigma[jj], r, delta[jj], delta_t)<<std::endl;
 					}
 			//w = exp(w);
 			dim1temp.push_back(w);
@@ -371,8 +404,11 @@ for(int I=0; I<m; I++){
 			//devide each element by the denominator
 			for(int t=0; t<b; t++){
 		//	std::cout<<dim1temp[t]<<"\t"<<wdenominator<<std::endl; 
-			W[m*b*(t)+m*(k)+(I)]=(((double)b)*(dim1temp[t]))/wdenominator;
-		/*	dim1temp[t]=dim1temp[t]-wdenominator;		
+			
+			//W[m*b*(t)+m*(k)+(I)]=(((double)b)*(dim1temp[t]))/wdenominator;
+			*three_dim_index(W, (I), k, t, m, b)=(((double)b)*(dim1temp[t]))/wdenominator;
+		/*	
+			dim1temp[t]=dim1temp[t]-wdenominator;		
 			dim1temp[t]=((double)b)*exp(dim1temp[t]);*/
 		//	std::cout<<dim1temp[t]<<std::endl;
 			}
@@ -400,7 +436,7 @@ std::cout<<"W[1][1][1]="<<W[1][1][1]<<std::endl;
 double check=0;
 //check all the weights from X0 are 1
 for(int e=0; e<b; e++){
-if(W[m*b*(0)+m*(e)+(0)]!=1){
+if(*three_dim_index(W, 0, e, 0, m, b)!=1){
 std::cout<<"there is an error with the weights. check that W[0][k][0]'s =1"<<std::endl;
 }
 }
@@ -409,13 +445,13 @@ for(int q=1; q<m; q++){
 	for(int a=0; a<b; a++){
 		check=0;
 		for(int E=0; E<b; E++){
-			check+=W[m*b*(E)+m*(a)+(q)];
-
+			//check+=W[m*b*(E)+m*(a)+(q)];
+			check+=*three_dim_index(W, (q), a, E, m, b);
 		}
 	}
 }
 
-V_0=MeshEstimator(strike, r, delta_t, b, m, X, W, V, asset_amount, payoff);//high bias option price
+V_0=MeshEstimator(strike, r, delta_t, b, m, X, W, V, asset_amount, payoff, num_assets);//high bias option price
 Vvector.push_back(V_0);//vector containing high bias option prices
 Vtotal_sum+=V_0;
 
@@ -426,7 +462,7 @@ std::cout<<"High Bias price (V_0) for mesh iteration "<<iterator<<" is "<<V_0<<s
 
 v_sum=0;
 for(int f=0; f<Path_estimator_iterations; f++){
-v_sum+=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, W, V, asset_amount, payoff);
+v_sum+=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, W, V, asset_amount, payoff, num_assets);
 }
 
 v_0=(1/double(Path_estimator_iterations))*v_sum;
