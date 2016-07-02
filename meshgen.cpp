@@ -153,7 +153,7 @@ while(std::getline(ss3, token, ','))
         sigmaV.push_back(atof(token.c_str()));
     }
 
-double Path_estimator_iterations=atof(settings[6].c_str());
+int Path_estimator_iterations=atof(settings[6].c_str());
 double strike=atof(settings[7].c_str());
 int b=atoi(settings[8].c_str());
 int N=atoi(settings[9].c_str());
