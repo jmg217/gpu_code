@@ -14,6 +14,9 @@
 
 
 #define PI 3.14159265358979323846
+
+void meshweights(double* W, double m, int b, double sigma[], double delta[], double r, double delta_t, double* X, int num_assets);
+
 void one_dim_array(std::vector< double > &vals, double array[], int N);
 
 double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
@@ -29,7 +32,7 @@ double MeshEstimator(double strike, double r, double delta_t, int b, double m,  
 double PathEstimator(double strike, double r, double delta_t, int b, double m, std::vector<double>& sigma, std::vector<double>& delta, std::vector<double>& X0, std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount, const PayOff& thePayOff);
 */
 
-double PathEstimator(double strike, double r, double delta_t, int b, double m, double sigma[], double delta[], double X0[], double* X, double* W, double* V, double asset_amount[], const PayOff& thePayOff, int num_assets);
+double PathEstimator(double strike, double r, double delta_t, int b, double m, double sigma[], double delta[], double X0[], double* X, double* W, double* V, double asset_amount[], int num_assets, int Path_estimator_iterations);
 
 void print_high_payoff(int b, double m, double* X, double* V, double asset_amount[], double* W );
 
@@ -37,7 +40,7 @@ double round( double value )//This function rounds the double sent to it to the 
 {
   return floor( value + 0.5 );
 }
-
+/*
 double kahansum(std::vector<double> & sortvector){
 double sum=0, c=0, y, t;
 
@@ -50,6 +53,7 @@ double sum=0, c=0, y, t;
 
 return sum;
 }
+*/
 /*
 double boxmuller()//This function uses the Box Muller algorithm to return standard normally distributed varibles.
 {
@@ -84,8 +88,8 @@ rn=round(rn);
 c=(int)rn;
 return c;
 }
-
-double density(double Xold, double  Xnew, double sigma, double r, double delta, double delta_t)// This function returns the transition density between node values.
+/*
+__host__ __device__ double density(double Xold, double  Xnew, double sigma, double r, double delta, double delta_t)// This function returns the transition density between node values.
 {
 double f=0, x=0;
 //x=(1/(sigma*sqrt(delta_t)))*(log(Xnew)-log(Xold)-(r-delta-0.5*sigma*sigma)*delta_t);
@@ -94,7 +98,7 @@ x=(1/(sigma*sqrt(delta_t)))*(Xnew-Xold-(r-delta-0.5*sigma*sigma)*delta_t);
 f= (1/(sigma*sqrt(delta_t)))*(1/(sqrt(2*PI)))*exp(-0.5*x*x);
 return f;
 }
-
+*/
 
 int main(){
 
@@ -138,7 +142,7 @@ double T = atof(settings[1].c_str());
 double m = atof(settings[2].c_str());
 double delta_t=T/m;
 int Rn;
-double v_0, V_0, Z, Xi, Xj, w, wdenominator, v_sum, sum_Z=0, vtotal_sum=0, Vtotal_sum=0;
+double v_0, V_0, Z, Xi, Xj, v_sum, sum_Z=0, vtotal_sum=0, Vtotal_sum=0;
 double r= atof(settings[3].c_str());
 
 std::istringstream ss2(settings[4]);
@@ -329,8 +333,8 @@ for(int i=0; i<m; i++){
 }
 
 //std::cout<<"after loop"<<std::endl;
-
-
+meshweights(W,  m, b, sigma, delta, r, delta_t, X, num_assets);
+/*
 //Weights generation for-loop 
 //NOTE: W^i_(j,k) IS REPRESENTED AT W[i][k][j] where k is at step i+1 and j is at step i.
 for(int I=0; I<m; I++){
@@ -395,10 +399,10 @@ for(int I=0; I<m; I++){
 			}
 			std::sort(sortvector.begin(), sortvector.end());
 			wdenominator=kahansum(sortvector);
-				/*for(int sortvec=0; sortvec<b; sortvec++){
-					wdenominator+=sortvector[sortvec];
+			//	for(int sortvec=0; sortvec<b; sortvec++){
+			//		wdenominator+=sortvector[sortvec];
 		//	std::cout<<std::setprecision(15)<<sortvec<<"\t"<< wdenominator <<"\t"<<sortvector[sortvec]<< std::endl;
-				}*/
+			//	}
 			//wdenominator=log(wdenominator);
 		//	wdenominator=exp(wdenominator);
 			//devide each element by the denominator
@@ -407,23 +411,24 @@ for(int I=0; I<m; I++){
 			
 			//W[m*b*(t)+m*(k)+(I)]=(((double)b)*(dim1temp[t]))/wdenominator;
 			*three_dim_index(W, (I), k, t, m, b)=(((double)b)*(dim1temp[t]))/wdenominator;
-		/*	
-			dim1temp[t]=dim1temp[t]-wdenominator;		
-			dim1temp[t]=((double)b)*exp(dim1temp[t]);*/
+			
+		//	dim1temp[t]=dim1temp[t]-wdenominator;		
+		//	dim1temp[t]=((double)b)*exp(dim1temp[t]);
 		//	std::cout<<dim1temp[t]<<std::endl;
-			}
-			/*double Sumcheck=0;	
-			for(int sumcheck=0;sumcheck<b;sumcheck++){
-			Sumcheck+=dim1temp[sumcheck];
-			}	
-			std::cout<<Sumcheck<<std::endl;*/
+		//	}
+		//	double Sumcheck=0;	
+		//	for(int sumcheck=0;sumcheck<b;sumcheck++){
+		//	Sumcheck+=dim1temp[sumcheck];
+		//	}	
+		//	std::cout<<Sumcheck<<std::endl;
 		//dim2temp.push_back(dim1temp); //dim1 is full therefore we add it onto dim2 vector
-		}	
+	//	}	
 	
-	}
+//	}
 
 //W.push_back(dim2temp); //mesh weights matrix
 }
+*/
 /*
 std::cout<<"W[0][0][0]="<<W[0][0][0]<<std::endl;                                                                                                                                 
 std::cout<<"W[0][1][0]="<<W[0][1][0]<<std::endl;
@@ -459,13 +464,14 @@ std::cout<<"High Bias price (V_0) for mesh iteration "<<iterator<<" is "<<V_0<<s
 
 //average over path estimators
 
-
+/*
 v_sum=0;
 for(int f=0; f<Path_estimator_iterations; f++){
-v_sum+=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, W, V, asset_amount, payoff, num_assets);
+v_sum=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, W, V, asset_amount, payoff, num_assets);
 }
-
-v_0=(1/double(Path_estimator_iterations))*v_sum;
+*/
+//v_0=(1/double(Path_estimator_iterations))*v_sum;
+v_0=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, W, V, asset_amount, num_assets, Path_estimator_iterations);
 vvector.push_back(v_0);
 vtotal_sum+=v_0;
 

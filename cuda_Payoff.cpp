@@ -3,22 +3,23 @@
 #include <vector>
 #include <cmath>
 #include "enum_header.h"
-#include <stdio.h>
-
-double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
-
-double* two_dim_index(double* vector, int i, int j, double m, int b);
 
 
-GeometricPayOffCall::GeometricPayOffCall(double k) : Strike(k)
+__host__ __device__ double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
+
+
+__host__ __device__ double* two_dim_index(double* vector, int i, int j, double m, int b);
+
+
+__host__ __device__ GeometricPayOffCall::GeometricPayOffCall(double k) : Strike(k)
 {
 }
 
-GeometricPayOffPut::GeometricPayOffPut(double k) : Strike(k)
+__host__ __device__ GeometricPayOffPut::GeometricPayOffPut(double k) : Strike(k)
 {
 }
 
-double GeometricPayOffCall::operator () (double* X, double asset_amount[], int i, int j, double m, int b, Containers container, int num_assets ) const
+__host__ __device__ double GeometricPayOffCall::operator () (double* X, int i, int j, double m, int b, Containers container, int num_assets ) const
 {
 double h;
 h=1;
@@ -64,7 +65,7 @@ return h;
 
 }
 
-double GeometricPayOffPut::operator () (double* X, double asset_amount[], int i, int j, double m, int b, Containers container, int num_assets) const
+__host__ __device__ double GeometricPayOffPut::operator () (double* X, int i, int j, double m, int b, Containers container, int num_assets) const
 {
 double h;
 h=1;
