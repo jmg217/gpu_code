@@ -11,7 +11,7 @@ The dividend yeild=
 The volatility=
 0.4
 The number of times we iterated over the path estimator=
-250
+400
 The strike price (dollars)=
 100
 The number of nodes per time step=

@@ -1,7 +1,7 @@
 all: executable
 
 executable: convert_to_array.o cuda_density.o cuda_meshestimator.o cuda_meshgen.o cudapathestimator.o index.o inner_control_mesh.o cuda_meshweights.o Payoff.o plot_high_bias.o 
-	nvcc convert_to_array.o cuda_density.o cuda_meshestimator.o cuda_meshgen.o cudapathestimator.o index.o inner_control_mesh.o cuda_meshweights.o Payoff.o plot_high_bias.o -o executable
+	nvcc -G -lineinfo convert_to_array.o cuda_density.o cuda_meshestimator.o cuda_meshgen.o cudapathestimator.o index.o inner_control_mesh.o cuda_meshweights.o Payoff.o plot_high_bias.o -o executable
 
 cuda_meshgen.o: cuda_meshgen.cpp
 	g++ -c cuda_meshgen.cpp -std=c++0x 
@@ -16,7 +16,7 @@ cuda_meshestimator.o: cuda_meshestimator.cpp
 	g++ -c cuda_meshestimator.cpp 
 
 cudapathestimator.o: cudapathestimator.cu
-	nvcc -c cudapathestimator.cu -arch=sm_30
+	nvcc -G -lineinfo -c cudapathestimator.cu -arch=sm_30
 
 index.o: index.cpp
 	g++ -c index.cpp

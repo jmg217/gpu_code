@@ -24,6 +24,8 @@ if (err !=cudaSuccess){\
 } while(0)
 
 
+double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
+
 __device__ double* two_dim_indexGPU(double* vector, int i, int j, double m, int b){
 
 //int m_int= (int)m;
@@ -109,11 +111,14 @@ for(int l=0; l<num_assets; l++){
 return h;
 }
 
-__device__ void S_weights(double* S_Weights, double* X_device, double* S, double m, int b, double* sigma_device, double* delta_device, double delta_t, int num_assets, double r , int i ){
+__device__ void S_weights(double* S_Weights, double* X_device, double* S, int m, int b, double* sigma_device, double* delta_device, double delta_t, int num_assets, double r , int i ){
+//if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("Beginning \n");}
 
 double density_product, sum, w_s;
-
+//if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("in function m =%i /n",m);}
 	for(int h=0; h<b; h++){   //h=k
+	//if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("Outside loop, i=%i \n", h);}
+
 	sum=0;
 	w_s=1;
 		for(int kk=0; kk<num_assets; kk++){
@@ -121,24 +126,35 @@ double density_product, sum, w_s;
 		}
 
 	density_product=1;
-	
+	//if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("after first inside loop \n");}
+
 		for(int g=0; g<b; g++){   //g=l
+//if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("inside second loop i=%i \n", g);}
+
 			for(int gg=0; gg<num_assets; gg++){
 			//density_product*=density(X[i][g][gg], X[i+1][h][gg], sigma[gg], r, delta[gg], delta_t);
+			/*
+			if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("inside third loop before A i=%i, gg=%i \n", g, gg);}
+			sum= *three_dim_indexGPU(X_device, i, g, gg, m, b);
+			if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("inside third loop after A i=%i, gg=%i \n", g, gg);}
+
+			sum= *three_dim_indexGPU(X_device, (i+1), h, gg, m, b);
+			if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("inside third loop afte B i=%i, gg=%i \n", g, gg);}
+*/
 			density_product*=densityGPU(*three_dim_indexGPU(X_device, i, g, gg, m, b), *three_dim_indexGPU(X_device, (i+1), h, gg, m, b), sigma_device[gg], r, delta_device[gg], delta_t);
 
 			}
 		sum+=(1/((double)b))*density_product;
 		}
 	w_s=w_s/sum;	
-	
+//if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("w_s=%f \n", w_s);}	
 	*two_dim_indexGPU(S_Weights, i, h, m, b)=w_s;
 	}
-
+//if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("End \n");}
 }
 
 
-__global__ void PathEstimatorKernel(double* X_device, double* W_device, double* V_device, double* delta_device, double* sigma_device, double* X0_device, int N, double strike, double r, double delta_t, int b, double m, int num_assets, curandState_t* states, double* results_dev, double* asset_amount_device){
+__global__ void PathEstimatorKernel(double* X_device, double* W_device, double* V_device, double* delta_device, double* sigma_device, double* X0_device, int N, double strike, double r, double delta_t, int b, int m, int num_assets, curandState_t* states, double* results_dev, double* asset_amount_device){
 
 //GeometricPayOffPut thePayOff(strike);
 //GeometricPayOffPut payoff(strike);
@@ -156,9 +172,9 @@ double v_0, S_i, Z, C, H, sum, weight; //, w_s, sum_Z;
 //generator.seed( rd() );
 //std::normal_distribution<double> distribution(0.0,1.0);
 /// ARRAY CODE
-int m_int=(int)m;
-const int S_N=(m_int)*num_assets;
-const int S_W_N=(m_int)*b;
+
+const int S_N=(m)*num_assets;
+const int S_W_N=(m)*b;
 
 double* S;
 S= new double[S_N]; 
@@ -169,7 +185,7 @@ S_Weights=new double[S_W_N];
 
 int idx =blockDim.x*blockIdx.x + threadIdx.x;
 
-
+//if(idx==0){printf("X[0][0][0]= %f \n",*three_dim_indexGPU(X_device,0,0,0,m,b));}
 
 int i=0;
 do {
@@ -190,13 +206,14 @@ do {
 			//Z=boxmuller();
 			//Z=distribution(generator);
 			Z=curand_normal_double(&states[idx]);
+			//if(idx==0){printf("random number=%f /n", Z);}
 			S_i=(*two_dim_indexGPU(S, (i-1), jj, m, num_assets)) +  (r-delta_device[jj]-0.5*pow(sigma_device[jj], 2))*delta_t + sigma_device[jj]*sqrt(delta_t)*Z;
 			//tempnodevector.push_back(S_i);
 			*two_dim_indexGPU(S, i, jj, m, num_assets)=S_i;
 		}
 	}
 
-
+//if(idx==0){printf("before the call, m =%i /n", m);}
 if(i<m-1){
 //S_weights(tempvec, S_Weights, X, S, m, b, sigma, delta, delta_t, asset_amount, r, i  );
 S_weights(S_Weights, X_device, S, m, b, sigma_device, delta_device, delta_t, num_assets, r, i );
@@ -211,9 +228,9 @@ double con_val=0; //continuation value variable
 	
 	else{
 		for(int k=0; k<b; k++){	
-			weight=*two_dim_indexGPU(S_Weights, i, k, m, b);
+			weight= * two_dim_indexGPU(S_Weights, i, k, m, b);
 			//con_val=V[(m-1)-i-1][k];
-			con_val=*two_dim_indexGPU(V_device, (m-1-i-1), k, m, b);
+			con_val= *two_dim_indexGPU(V_device, (m-1-i-1), k, m, b);
 			sum+=(weight) * (con_val); 			
 		}
 	
@@ -230,9 +247,11 @@ double con_val=0; //continuation value variable
 H= GeometricPayOffPutV(S, i, m, num_assets, num_assets, strike)*exp(-r*delta_t*((i+1)));
 
 i=i+1;
-}while(H<C);
+}while(H<C);//this will stop once H is less then the continuation value. at m-1, c=0 therefore m-1 is the max amount of loops.
 
 v_0=H;
+
+//if(idx==0){printf("result %i=%f", idx, v_0);}
 
 results_dev[idx]=v_0;
 
@@ -243,8 +262,12 @@ delete[] S_Weights;
 
 }
 
+
 double PathEstimator(double strike, double r, double delta_t, int b, double m, double sigma[], double delta[], double X0[], double* X, double* W, double* V, double asset_amount[], int num_assets, int Path_estimator_iterations ){
 
+//m=int(m);
+//printf("at the start of pathestimator m=%f /n", m);
+//printf("Ib serial X[0][0][0]= %f \n",*three_dim_index(X,0,0,0,m,b));
 cudaError_t error = cudaGetLastError();
 
   if( error != cudaSuccess )
@@ -270,6 +293,8 @@ double* asset_amount_host;
 asset_amount_host =asset_amount;
 
 int m_int=(int)m;
+//printf("at the start of pathestimator m_int=%i /n", m_int);
+
 
 int X_N=(m_int) * b * (num_assets);
 int W_N=(m_int) * b * b;
@@ -368,8 +393,9 @@ error = cudaGetLastError();
     exit(1);
   }
 
+cudaDeviceSetLimit(cudaLimitMallocHeapSize, 1000*1000*10*sizeof(double));
 //printf("after");
-PathEstimatorKernel<<<gridDim, blockDim>>>(X_device, W_device, V_device, delta_device, sigma_device, X0_device, N, strike, r, delta_t, b,  m, num_assets, states, results_dev, asset_amount_device);
+PathEstimatorKernel<<<gridDim, blockDim>>>(X_device, W_device, V_device, delta_device, sigma_device, X0_device, N, strike, r, delta_t, b,  m_int, num_assets, states, results_dev, asset_amount_device);
 
 cudaDeviceSynchronize();
 
@@ -423,7 +449,7 @@ cudaFree(X0_device);
 cudaFree(results_dev);
 cudaFree(asset_amount_device);
 
-//cudaDeviceReset();
+cudaDeviceReset();
 
 return result;
 }
