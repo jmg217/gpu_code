@@ -461,7 +461,10 @@ error = cudaGetLastError();
     exit(1);
   }
 
-//cudaDeviceSetLimit(cudaLimitMallocHeapSize, 100000*sizeof(double));
+cudaDeviceSetLimit(cudaLimitMallocHeapSize, 80000000*sizeof(double));
+size_t size;
+cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
+    printf("Heap size found to be %d\n",(int)size);
 //printf("after");
 PathEstimatorKernel<<<gridDim, blockDim>>>(X_device, weight_denominator_device, V_device, delta_device, sigma_device, X0_device, N, strike, r, delta_t, b,  m_int, num_assets, states, results_dev, asset_amount_device);
 
