@@ -24,6 +24,17 @@ __global__ void init(unsigned int seed, curandState_t* states) {
 __global__ void randoms(curandState_t* states, double* numbers) {
   /* curand works like rand - except that it takes a state as a parameter */
   numbers[blockIdx.x] = curand_normal_double(&states[blockIdx.x]);
+
+
+
+}
+
+__global__ void test(){
+
+if(blockIdx.x==1){printf("S_new=%i\n",S_new[0]);}
+
+delete[] S_new;
+
 }
 
 int main( ) {
@@ -35,7 +46,7 @@ int main( ) {
   cudaMalloc((void**) &states, N * sizeof(curandState_t));
 
   /* invoke the GPU to initialize all of the random states */
-  init<<<N, 1>>>(time(0), states);
+  init<<<1, N>>>(time(0), states);
 
   /* allocate an array of unsigned ints on the CPU and GPU */
   double cpu_nums[N];
@@ -43,8 +54,9 @@ int main( ) {
   cudaMalloc((void**) &gpu_nums, N * sizeof(double));
 
   /* invoke the kernel to get some random numbers */
-  randoms<<<N, 1>>>(states, gpu_nums);
+  randoms<<<1, N>>>(states, gpu_nums);
 
+  test<<1, N >>();
   /* copy the random numbers back */
   cudaMemcpy(cpu_nums, gpu_nums, N * sizeof(double), cudaMemcpyDeviceToHost);
 

@@ -12,7 +12,7 @@
 #include <curand_kernel.h>
 
 // REMEMBER TO PUT __host__ __device__ IN FRONT OF CLASS METHODS
-
+  
 #define PI 3.14159265358979323846
 #define CHECK(x) do {\
 cudaError_t err =(x);\
@@ -113,10 +113,11 @@ for(int l=0; l<num_assets; l++){
 return h;
 }
 
-__device__ void S_weights(double* S_Weights, double* X_device, double* S_new, int m, int b, double* sigma_device, double* delta_device, double delta_t, int num_assets, double r , int i ){//note: S_new used to be just S
+__device__ void S_weights(double* S_Weights, double* X_device, double* S_new, int m, int b, double* sigma_device, double* delta_device, double delta_t, int num_assets, double r , int i, double* weight_denominator_device ){//note: S_new used to be just S
 //if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("Beginning \n");}
 
-double density_product, sum, w_s;
+//double density_product,
+double sum, w_s;
 //if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("in function m =%i /n",m);}
 	for(int h=0; h<b; h++){   //h=k
 	//if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("Outside loop, i=%i \n", h);}
@@ -136,7 +137,7 @@ clock_t stop_time =clock();
 int time=stop_time-start_time;
 if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("result at i=%i , = %i\n",i, time);}
 */
-
+/*
 	density_product=1;
 	//if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("after first inside loop \n");}
 
@@ -144,33 +145,33 @@ if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("result at i=%i , = %i\n",i, t
 //if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("inside second loop i=%i \n", g);}
 
 			for(int gg=0; gg<num_assets; gg++){
-			//density_product*=density(X[i][g][gg], X[i+1][h][gg], sigma[gg], r, delta[gg], delta_t);
-			/*
-			if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("inside third loop before A i=%i, gg=%i \n", g, gg);}
-			sum= *three_dim_indexGPU(X_device, i, g, gg, m, b);
-			if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("inside third loop after A i=%i, gg=%i \n", g, gg);}
 
-			sum= *three_dim_indexGPU(X_device, (i+1), h, gg, m, b);
-			if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("inside third loop afte B i=%i, gg=%i \n", g, gg);}
-*/
-			density_product*=densityGPU(*three_dim_indexGPU(X_device, i, g, gg, m, b), *three_dim_indexGPU(X_device, (i+1), h, gg, m, b), sigma_device[gg], r, delta_device[gg], delta_t);
+				density_product*=densityGPU(*three_dim_indexGPU(X_device, i, g, gg, m, b), *three_dim_indexGPU(X_device, (i+1), h, gg, m, b), sigma_device[gg], r, delta_device[gg], delta_t);
 
 			}
 		sum+=(1/((double)b))*density_product;
 		}
-	w_s=w_s/sum;	
+*/
+	sum = *two_dim_indexGPU(weight_denominator_device, i, h, m-1, b);
+	w_s = (((double)b)*w_s)/sum;	
 //if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("w_s=%f \n", w_s);}	
 	//*two_dim_indexGPU(S_Weights, i, h, m, b)=w_s;
 	S_Weights[h]=w_s;
 	}
+
 //if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("End \n");}
 }
 
 
-__global__ void PathEstimatorKernel(double* X_device, double* W_device, double* V_device, double* delta_device, double* sigma_device, double* X0_device, int N, double strike, double r, double delta_t, int b, int m, int num_assets, curandState_t* states, double* results_dev, double* asset_amount_device){
+__global__ void PathEstimatorKernel(double* X_device, double* weight_denominator_device, double* V_device, double* delta_device, double* sigma_device, double* X0_device, int N, double strike, double r, double delta_t, int b, int m, int num_assets, curandState_t* states, double* results_dev, double* asset_amount_device){
 
 
+int idx =blockDim.x*blockIdx.x + threadIdx.x;
+//if(blockDim.x*blockIdx.x + threadIdx.x==N+1){printf("n+1 outside \n");}
+if(idx<N){
 
+//if(blockDim.x*blockIdx.x + threadIdx.x==N-1){printf("n-1 \n");}
+//if(blockDim.x*blockIdx.x + threadIdx.x==N+1){printf("n+1 inside \n");}
 
 //GeometricPayOffPut thePayOff(strike);
 //GeometricPayOffPut payoff(strike);
@@ -192,22 +193,27 @@ double v_0, S_i, Z, C, H, sum, weight; //, w_s, sum_Z;
 //const int S_N=(m)*num_assets;
 //const int S_W_N=(m)*b;
 
-//const int S_N= num_assets;
-//const int S_W_N= b; 
-/*
+const int S_N= num_assets;
+const int S_W_N= b; 
+
 double* S_new;
 S_new= new double[S_N]; 
+//double s_new[S_new_N];
+//S_new=s_new;
 
-double* S_old;
-S_old=new double[S_N];
+//double* S_old;
+//S_old=new double[S_N];
 
 double* S_Weights;
 S_Weights=new double[S_W_N];
-*/
+//double s_weights[S_W_new_N];
+//S_Weights=s_weights;
 
-double* S_new;
+
+
+//double* S_new;
 //double* S_old;
-double* S_Weights;
+//double* S_Weights;
 /*
 double s_new[1];
 //double s_old[1];
@@ -216,10 +222,10 @@ S_new=s_new;
 //S_old=s_old;
 S_Weights=s_weights;
 */
-S_Weights=new double[250];
-S_new=new double[1];
+//S_Weights=new double[250];
+//S_new=new double[1];
 
-int idx =blockDim.x*blockIdx.x + threadIdx.x;
+
 
 //if(idx==0){printf("X[0][0][0]= %f \n",*three_dim_indexGPU(X_device,0,0,0,m,b));}
 //if(idx==0){printf("before the loop");}
@@ -255,12 +261,12 @@ do {
 
 //if(idx==0){printf("before the call, m =%i /n", m);}
 if(i<m-1){
+
 //S_weights(tempvec, S_Weights, X, S, m, b, sigma, delta, delta_t, asset_amount, r, i  );
 //S_weights(S_Weights, X_device, S, m, b, sigma_device, delta_device, delta_t, num_assets, r, i );
-S_weights(S_Weights, X_device, S_new, m, b, sigma_device, delta_device, delta_t, num_assets, r, i );
+S_weights(S_Weights, X_device, S_new, m, b, sigma_device, delta_device, delta_t, num_assets, r, i, weight_denominator_device);
 
 }
-
 
 double con_val=0; //continuation value variable
 	sum=0;
@@ -303,7 +309,6 @@ v_0=H;
 results_dev[idx]=v_0;
 
 
-
 delete[] S_new;
 //delete[] S_old;
 delete[] S_Weights;
@@ -312,7 +317,10 @@ delete[] S_Weights;
 }
 
 
-double PathEstimator(double strike, double r, double delta_t, int b, double m, double sigma[], double delta[], double X0[], double* X, double* W, double* V, double asset_amount[], int num_assets, int Path_estimator_iterations ){
+
+}
+
+double PathEstimator(double strike, double r, double delta_t, int b, double m, double sigma[], double delta[], double X0[], double* X, double* weight_denominator, double* V, double asset_amount[], int num_assets, int Path_estimator_iterations ){
 
 
 
@@ -348,7 +356,7 @@ int m_int=(int)m;
 
 
 int X_N=(m_int) * b * (num_assets);
-int W_N=(m_int) * b * b;
+int W_N=(m_int-1) * b;
 int V_N=(m_int) * b;
 int delta_N= num_assets;
 int sigma_N=num_assets;
@@ -357,7 +365,7 @@ int asset_amount_N = num_assets;
 
 double* X_device;
 double* V_device;
-double* W_device;
+double* weight_denominator_device;
 double* sigma_device;
 double* delta_device;
 double* X0_device;
@@ -381,8 +389,8 @@ cudaMemcpy(X_device, X, X_N*sizeof(double), cudaMemcpyHostToDevice);
 cudaMalloc((void**) &V_device, V_N*sizeof(double) );
 cudaMemcpy(V_device, V, V_N*sizeof(double), cudaMemcpyHostToDevice);
 
-cudaMalloc((void**) &W_device, W_N*sizeof(double) );
-cudaMemcpy(W_device, W, W_N*sizeof(double), cudaMemcpyHostToDevice);
+cudaMalloc((void**) &weight_denominator_device, W_N*sizeof(double) );
+cudaMemcpy(weight_denominator_device, weight_denominator, W_N*sizeof(double), cudaMemcpyHostToDevice);
 
 cudaMalloc((void**) &X0_device, X0_N*sizeof(double) );
 cudaMemcpy(X0_device, X0_host, X0_N*sizeof(double), cudaMemcpyHostToDevice);
@@ -396,10 +404,19 @@ cudaMemcpy(delta_device, delta_host, delta_N*sizeof(double), cudaMemcpyHostToDev
 cudaMalloc((void**) &asset_amount_device, asset_amount_N*sizeof(double) );
 cudaMemcpy(asset_amount_device, asset_amount_host, asset_amount_N*sizeof(double), cudaMemcpyHostToDevice);
 
-dim3 gridDim(1);
-dim3 blockDim(N);
 
+//dim3 gridDim((int)ceil(N/512.0));
+//printf("the grid dim is:%i\n",(int)ceil(N/512.0));
+//dim3 blockDim(512);
 
+dim3 gridDim((int)ceil(N/512.0));
+dim3 blockDim(512.0);
+
+/*if(N>512){
+gridDim()= ceil(N/521);
+
+}
+*/
 error = cudaGetLastError();
 
   if( error != cudaSuccess )
@@ -446,7 +463,7 @@ error = cudaGetLastError();
 
 //cudaDeviceSetLimit(cudaLimitMallocHeapSize, 100000*sizeof(double));
 //printf("after");
-PathEstimatorKernel<<<gridDim, blockDim>>>(X_device, W_device, V_device, delta_device, sigma_device, X0_device, N, strike, r, delta_t, b,  m_int, num_assets, states, results_dev, asset_amount_device);
+PathEstimatorKernel<<<gridDim, blockDim>>>(X_device, weight_denominator_device, V_device, delta_device, sigma_device, X0_device, N, strike, r, delta_t, b,  m_int, num_assets, states, results_dev, asset_amount_device);
 
 cudaDeviceSynchronize();
 
@@ -475,7 +492,7 @@ error = cudaGetLastError();
 double result=0;
 for(int f=0; f<Path_estimator_iterations; f++){
 result+=results[f];
-//printf()
+//printf("result %i =%f\n", f, results[f]);
 }
 result=(1/double(N))*result;
 
@@ -493,7 +510,7 @@ error = cudaGetLastError();
 
 cudaFree(X_device);
 cudaFree(V_device);
-cudaFree(W_device);
+cudaFree(weight_denominator_device);
 cudaFree(sigma_device);
 cudaFree(delta_device);
 cudaFree(X0_device);
@@ -503,6 +520,7 @@ cudaFree(asset_amount_device);
 cudaDeviceReset();
 
 return result;
+//cudaDeviceReset();
 }
 
 

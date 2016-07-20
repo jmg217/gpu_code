@@ -17,7 +17,7 @@
 void one_dim_array(std::vector< double > &vals, double array[], int N);
 
 double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
-
+double* two_dim_index(double* vector, int i, int j, double m, int b);
 /*
 //This function is contained within meshestimator.cpp
 double MeshEstimator(double strike, double r, double delta_t, int b, double m,  std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount, const PayOff& thePayOff);
@@ -29,7 +29,7 @@ double MeshEstimator(double strike, double r, double delta_t, int b, double m,  
 double PathEstimator(double strike, double r, double delta_t, int b, double m, std::vector<double>& sigma, std::vector<double>& delta, std::vector<double>& X0, std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount, const PayOff& thePayOff);
 */
 
-double PathEstimator(double strike, double r, double delta_t, int b, double m, double sigma[], double delta[], double X0[], double* X, double* W, double* V, double asset_amount[], const PayOff& thePayOff, int num_assets);
+double PathEstimator(double strike, double r, double delta_t, int b, double m, double sigma[], double delta[], double X0[], double* X, double* weight_denominator, double* V, double asset_amount[], const PayOff& thePayOff, int num_assets);
 
 void print_high_payoff(int b, double m, double* X, double* V, double asset_amount[], double* W );
 
@@ -257,6 +257,10 @@ double* V;
 int V_dim = (m_int) * b;
 V = new double[V_dim];
 
+double* weight_denominator;
+int denom_dim = (m_int-1)*b;
+weight_denominator =new double[denom_dim];
+
 for(int init=0; init<num_assets; init++){
 	X0[init]=log(X0[init]);
 }	
@@ -402,6 +406,8 @@ for(int I=0; I<m; I++){
 			//wdenominator=log(wdenominator);
 		//	wdenominator=exp(wdenominator);
 			//devide each element by the denominator
+			
+			*two_dim_index(weight_denominator, i, k, m-1, b)=wdenominator;
 			for(int t=0; t<b; t++){
 		//	std::cout<<dim1temp[t]<<"\t"<<wdenominator<<std::endl; 
 			
@@ -462,7 +468,7 @@ std::cout<<"High Bias price (V_0) for mesh iteration "<<iterator<<" is "<<V_0<<s
 
 v_sum=0;
 for(int f=0; f<Path_estimator_iterations; f++){
-v_sum+=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, W, V, asset_amount, payoff, num_assets);
+v_sum+=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, weight_denominator, V, asset_amount, payoff, num_assets);
 }
 
 v_0=(1/double(Path_estimator_iterations))*v_sum;
@@ -504,7 +510,7 @@ outFile.close();
 delete[] X;
 delete[] W;
 delete[] V;
-
+delete[] weight_denominator;
 return 0;
 
 

@@ -16,7 +16,7 @@ cuda_meshestimator.o: cuda_meshestimator.cpp
 	g++ -c cuda_meshestimator.cpp 
 
 cudapathestimator.o: cudapathestimator.cu
-	nvcc -c cudapathestimator.cu -arch=sm_30
+	nvcc -c cudapathestimator.cu -arch=sm_35
 
 index.o: index.cpp
 	g++ -c index.cpp
