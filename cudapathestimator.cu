@@ -24,7 +24,7 @@ if (err !=cudaSuccess){\
 } while(0)
 
 //double* two_dim_index(double* vector, int i, int j, double m, int b);
-double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
+double* three_dim_index(double* matrix, int i, int j, int k, double m, int b, int num_assets);
 
 __device__ double* two_dim_indexGPU(double* vector, int i, int j, double m, int b){
 
@@ -39,14 +39,14 @@ return p;
 
 }
 
-__device__ double* three_dim_indexGPU(double* matrix, int i, int j, int k, double m, int b){
+__device__ double* three_dim_indexGPU(double* matrix, int i, int j, int k, double m, int b, int num_assets){
 
 int m_int = (int)m;
 double* p;
 
 //specify index layout here
-p=&matrix[(m_int)*b*(k)+(m_int)*(j)+(i)];
-
+//p=&matrix[(m_int)*b*(k)+(m_int)*(j)+(i)];
+p=&matrix[i*b*num_assets+j*num_assets+k];
 return p;
 
 }
@@ -127,7 +127,7 @@ double sum, w_s;
 	w_s=1;
 		for(int kk=0; kk<num_assets; kk++){
 			//w_s*=densityGPU(*two_dim_indexGPU(S, i, kk, m, num_assets), *three_dim_indexGPU(X_device, (i+1), h, kk, m, b), sigma_device[kk], r, delta_device[kk], delta_t);
-			w_s*=densityGPU(S_new[kk], *three_dim_indexGPU(X_device, (i+1), h, kk, m, b), sigma_device[kk], r, delta_device[kk], delta_t);
+			w_s*=densityGPU(S_new[kk], *three_dim_indexGPU(X_device, (i+1), h, kk, m, b, num_assets), sigma_device[kk], r, delta_device[kk], delta_t);
 
 		}
 /*
@@ -462,9 +462,9 @@ error = cudaGetLastError();
   }
 
 cudaDeviceSetLimit(cudaLimitMallocHeapSize, 80000000*sizeof(double));
-size_t size;
-cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
-    printf("Heap size found to be %d\n",(int)size);
+//size_t size;
+//cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
+    //printf("Heap size found to be %d\n",(int)size);
 //printf("after");
 PathEstimatorKernel<<<gridDim, blockDim>>>(X_device, weight_denominator_device, V_device, delta_device, sigma_device, X0_device, N, strike, r, delta_t, b,  m_int, num_assets, states, results_dev, asset_amount_device);
 

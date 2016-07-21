@@ -19,7 +19,7 @@ void meshweights(double* W, double m, int b, double sigma[], double delta[], dou
 
 void one_dim_array(std::vector< double > &vals, double array[], int N);
 
-double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
+double* three_dim_index(double* matrix, int i, int j, int k, double m, int b, int num_assets);
 double* two_dim_index(double* vector, int i, int j, double m, int b);
 
 /*
@@ -299,7 +299,7 @@ for(int i=0; i<m; i++){
 		//	Xi=X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
 			//nodevector.push_back(Xi);
  
-	*three_dim_index(X, i, l, ll, m, b) = X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
+	*three_dim_index(X, i, l, ll, m, b, num_assets) = X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
 		
 	//X[m*b*(ll)+m*(l)+(i)]=X0[ll] +  (r-delta[ll]-0.5*pow(sigma[ll], 2))*delta_t + sigma[ll]*sqrt(delta_t)*Z;
 		//three_dim_index(X, i, l, ll, m, b, Xi);
@@ -324,10 +324,10 @@ for(int i=0; i<m; i++){
 			//std::cout<<"meshgen="<<Z<<std::endl;
 			//Xi=X[i-1][j][jj];
 			//Xi=X[m*b*(jj)+m*(j)+(i-1)];
-			Xi=*three_dim_index(X, (i-1), j, jj, m, b);
+			Xi=*three_dim_index(X, (i-1), j, jj, m, b, num_assets);
 			//Xj=Xi * (exp ((r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z));
 			//X[m*b*(jj)+m*(j)+(i)]=Xi +  (r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z; 
-			*three_dim_index(X, i, j, jj, m, b)=Xi +  (r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z;
+			*three_dim_index(X, i, j, jj, m, b, num_assets)=Xi +  (r-delta[jj]-0.5*pow(sigma[jj], 2))*delta_t + sigma[jj]*sqrt(delta_t)*Z;
 			//nodevector.push_back(Xj);
 		}	
 	//	myvector.push_back(nodevector);
@@ -448,7 +448,7 @@ std::cout<<"W[1][1][1]="<<W[1][1][1]<<std::endl;
 double check=0;
 //check all the weights from X0 are 1
 for(int e=0; e<b; e++){
-if(*three_dim_index(W, 0, e, 0, m, b)!=1){
+if(*three_dim_index(W, 0, e, 0, m, b, b)!=1){
 std::cout<<"there is an error with the weights. check that W[0][k][0]'s =1"<<std::endl;
 }
 }
@@ -458,7 +458,7 @@ for(int q=1; q<m; q++){
 		check=0;
 		for(int E=0; E<b; E++){
 			//check+=W[m*b*(E)+m*(a)+(q)];
-			check+=*three_dim_index(W, (q), a, E, m, b);
+			check+=*three_dim_index(W, (q), a, E, m, b, num_assets);
 		}
 	}
 }

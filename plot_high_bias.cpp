@@ -6,7 +6,7 @@
 #include <fstream>
 #include <vector>
 
-double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
+double* three_dim_index(double* matrix, int i, int j, int k, double m, int b, int num_assets);
 
 double* two_dim_index(double* vector, int i, int j, double m, int b);
 

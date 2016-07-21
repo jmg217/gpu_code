@@ -5,7 +5,7 @@
 #include "enum_header.h"
 #include <stdio.h>
 
-double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
+double* three_dim_index(double* matrix, int i, int j, int k, double m, int b, int num_assets);
 
 double* two_dim_index(double* vector, int i, int j, double m, int b);
 
@@ -27,7 +27,7 @@ h=1;
 if(container==matrix){
 	for(int l=0; l<num_assets; l++){
        // h*=exp(X[i][j][l]);
-		h*= exp(*three_dim_index(X, i, j, l, m, b));
+		h*= exp(*three_dim_index(X, i, j, l, m, b, num_assets));
 	}
 	h=pow(h,1.0/(num_assets));
 //h=std::max(h-Strike,0.0);
@@ -71,7 +71,7 @@ h=1;
 if(container==matrix){
 	for(int l=0; l<num_assets; l++){
         //h*=exp(X[i][j][l]);
-		h*=exp(*three_dim_index(X, i, j, l, m, b));
+		h*=exp(*three_dim_index(X, i, j, l, m, b, num_assets));
 	}
 	h=pow(h,1.0/(num_assets));
 //h=std::max(Strike-h,0.0);

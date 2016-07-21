@@ -10,9 +10,9 @@
 //double inner_control_mesh(int i, int j, int b, double r, double delta_t, double m, std::vector< std::vector< std::vector<double> > >& W, std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector<double> >& V);
 
 
-double inner_control_mesh(int i, int j, int b, double r, double delta_t, double m, double* W, double* X, double* V);
+double inner_control_mesh(int i, int j, int b, double r, double delta_t, double m, double* W, double* X, double* V, int num_assets);
 
-double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
+double* three_dim_index(double* matrix, int i, int j, int k, double m, int b, int num_assets);
 
 //__host__ __device__ double* two_dim_index(double* vector, int i, int j, double m, int b);
 double* two_dim_index(double* vector, int i, int j, double m, int b);
@@ -70,7 +70,7 @@ for(int i=0; i<m; i++){
 
 //NEW CONTROL VARIATE VERSION OF CONTIN VAL
 
-		C=inner_control_mesh(i, j, b, r, delta_t, m, W, X, V);
+		C=inner_control_mesh(i, j, b, r, delta_t, m, W, X, V, num_assets);
 
 
 ////////////PREVIOUS CALCULATION of CONTIN VAL. 
