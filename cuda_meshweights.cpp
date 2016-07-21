@@ -10,6 +10,7 @@
 double density(double Xold, double  Xnew, double sigma, double r, double delta, double delta_t);
 
 double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
+double* two_dim_index(double* vector, int i, int j, double m, int b);
 
 double kahansum(double* sortvector, int b){
 double sum=0, c=0, y, t;
@@ -25,8 +26,9 @@ return sum;
 }
 
 
-void meshweights(double* W, double m, int b, double sigma[], double delta[], double r, double delta_t, double* X, int num_assets){
+void meshweights(double* W, double m, int b, double sigma[], double delta[], double r, double delta_t, double* X, int num_assets, double* weight_denominator){
 double wdenominator, w;
+
 double* sortvector;
 sortvector=new double[b];
 
@@ -71,20 +73,27 @@ for(int I=0; I<m; I++){
 			//w = exp(w);
 			//dim1temp.push_back(w);
 			//sortvector.push_back(w);   
-			sortvector[j]=w;                                                                                                              
+			sortvector[j]=w;                                                                
 			}
 			//std::sort(sortvector.begin(), sortvector.end());
 			wdenominator=kahansum(sortvector, b);
 				//devide each element by the denominator
+//			std::cout<<"before"<<std::endl;
+			*two_dim_index(weight_denominator, I-1, k, m-1, b)=wdenominator;
+//			std::cout<<"after and I= "<<I<<std::endl;
+//			std::cout<<*two_dim_index(weight_denominator, I, k, m-1, b)<<std::endl;
 			for(int t=0; t<b; t++){
 				*three_dim_index(W, (I), k, t, m, b)=(((double)b)*(sortvector[t]))/wdenominator;
 			}
-		}	
+			//std::cout<<"after"<<std::endl;
+		}
+	//std::cout<<"outside 1"<<std::endl;	
 	
 	}
 
-
+//std::cout<<"outside 2"<<std::endl;
 }
-
+//std::cout<<"outside 3"<<std::endl;
 delete[] sortvector;
+//std::cout<<"end"<<std::endl;
 }

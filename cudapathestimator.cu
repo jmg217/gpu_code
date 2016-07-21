@@ -23,7 +23,7 @@ if (err !=cudaSuccess){\
 	exit(1);\
 } while(0)
 
-
+//double* two_dim_index(double* vector, int i, int j, double m, int b);
 double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
 
 __device__ double* two_dim_indexGPU(double* vector, int i, int j, double m, int b){

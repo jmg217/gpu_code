@@ -15,11 +15,12 @@
 
 #define PI 3.14159265358979323846
 
-void meshweights(double* W, double m, int b, double sigma[], double delta[], double r, double delta_t, double* X, int num_assets);
+void meshweights(double* W, double m, int b, double sigma[], double delta[], double r, double delta_t, double* X, int num_assets, double* weight_denominator);
 
 void one_dim_array(std::vector< double > &vals, double array[], int N);
 
 double* three_dim_index(double* matrix, int i, int j, int k, double m, int b);
+double* two_dim_index(double* vector, int i, int j, double m, int b);
 
 /*
 //This function is contained within meshestimator.cpp
@@ -32,7 +33,7 @@ double MeshEstimator(double strike, double r, double delta_t, int b, double m,  
 double PathEstimator(double strike, double r, double delta_t, int b, double m, std::vector<double>& sigma, std::vector<double>& delta, std::vector<double>& X0, std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount, const PayOff& thePayOff);
 */
 
-double PathEstimator(double strike, double r, double delta_t, int b, double m, double sigma[], double delta[], double X0[], double* X, double* W, double* V, double asset_amount[], int num_assets, int Path_estimator_iterations);
+double PathEstimator(double strike, double r, double delta_t, int b, double m, double sigma[], double delta[], double X0[], double* X, double* weight_denominator, double* V, double asset_amount[], int num_assets, int Path_estimator_iterations);
 
 void print_high_payoff(int b, double m, double* X, double* V, double asset_amount[], double* W );
 
@@ -261,6 +262,11 @@ double* V;
 int V_dim = (m_int) * b;
 V = new double[V_dim];
 
+//std::cout<<"before"<<std::endl; 
+double* weight_denominator;
+int denom_dim = (m_int-1) * b;
+weight_denominator =new double[denom_dim];
+//std::cout<<"after"<<std::endl;
 for(int init=0; init<num_assets; init++){
 	X0[init]=log(X0[init]);
 }	
@@ -333,7 +339,8 @@ for(int i=0; i<m; i++){
 }
 
 //std::cout<<"after loop"<<std::endl;
-meshweights(W,  m, b, sigma, delta, r, delta_t, X, num_assets);
+meshweights(W,  m, b, sigma, delta, r, delta_t, X, num_assets, weight_denominator);
+//std::cout<<"after"<<std::endl;
 /*
 //Weights generation for-loop 
 //NOTE: W^i_(j,k) IS REPRESENTED AT W[i][k][j] where k is at step i+1 and j is at step i.
@@ -471,7 +478,7 @@ v_sum=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, W, V, asset_
 }
 */
 //v_0=(1/double(Path_estimator_iterations))*v_sum;
-v_0=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, W, V, asset_amount, num_assets, Path_estimator_iterations);
+v_0=PathEstimator(strike, r, delta_t, b,  m, sigma, delta, X0, X, weight_denominator, V, asset_amount, num_assets, Path_estimator_iterations);
 vvector.push_back(v_0);
 vtotal_sum+=v_0;
 
@@ -510,7 +517,7 @@ outFile.close();
 delete[] X;
 delete[] W;
 delete[] V;
-
+delete[] weight_denominator;
 return 0;
 
 
